@@ -1,0 +1,5 @@
+node_modules
+.eslinttrc.json
+.prettierrc
+config.env
+.cache/
