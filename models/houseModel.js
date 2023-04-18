@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const houseSchema = new mongoose.Schema({
   owner: {
@@ -39,4 +39,6 @@ const houseSchema = new mongoose.Schema({
   }
 });
 
-export default mongoose.model("House", houseSchema);
+const House = mongoose.model('House', houseSchema);
+
+module.exports = House;
