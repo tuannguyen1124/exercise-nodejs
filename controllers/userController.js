@@ -31,6 +31,7 @@ const upload = multer({
 });
 
 exports.uploadUserPhoto = upload.single('photo');
+
 exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
   if (!req.file) return next();
 
@@ -79,7 +80,7 @@ exports.updateMe = async (req, res, next) => {
     );
   }
 
-  const filteredBody = filterObj(req.body, 'name', 'email');
+  const filteredBody = filterObj(req.body, 'firstName', 'lastName', 'gender', 'email', 'address');
   if (req.file) filteredBody.photo = req.file.filename;
 
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "A user must have a username"],
     trim: true,
+    unique: true,
     maxlength: [30, "Username must be have less or equal than 40 characters"],
     minlength: [3, "Username must be have less or equal than 40 characters"],
   },
@@ -30,22 +31,17 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
-  active: {
-    type: Boolean,
-    default: true,
-    select: false,
-  },
   firstName: {
     type: String,
     trim: true,
-    maxlength: [30, "Name must be have less or equal than 40 characters"],
-    minlength: [3, "Name must be have less or equal than 40 characters"],
+    maxlength: [40, "Name must be have less or equal than 40 characters"],
+    minlength: [1, "First name must be have more or equal than 1 characters"],
   },
   lastName: {
     type: String,
     trim: true,
-    maxlength: [30, "Last name must be have less or equal than 40 characters"],
-    minlength: [3, "Last name must be have less or equal than 40 characters"],
+    maxlength: [40, "Last name must be have less or equal than 40 characters"],
+    minlength: [1, "Last name must be have more or equal than 1 characters"],
   },
 
   gender: {
@@ -60,9 +56,13 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     // validate: [validator.isEmail, 'Please provide a valid email']
   },
+  address: {
+    type: String
+  },
+  photo: { type: String, default: 'default.jpg' },
   isVerified: {
-    type: Number,
-    default: 0,
+    type: Boolean,
+    default: false,
   },
   role: {
     type: String,

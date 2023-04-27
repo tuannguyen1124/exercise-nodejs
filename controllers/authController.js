@@ -2,10 +2,11 @@ const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const User = require("./../models/userModel");
+const Otp = require("./../models/otpModel");
 const catchAsync = require("./../utils/catchAsync");
 const AppError = require("./../utils/appError");
 const Email = require("./../utils/email");
-const Otp = require("./otpController");
+
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -36,13 +37,90 @@ const createSendToken = (user, statusCode, req, res) => {
   });
 };
 
-exports.signup = catchAsync(async (req, res, next) => {
+// const sendEmailVerify = catchAsync(async (req, res, next) => {
+//   try {
+//     if (!req.body.email) {
+//       return next(new AppError("Missing email params", 502));
+//     }
 
+//     let user = await User.findOne({ email: req.body.email });
+//     if (!user) {
+//       return next(new AppError("Missing email params", 502));
+//     }
+
+//     let checkExists = await Otp.findOne({ userId: user._id });
+//     let otp = checkExists
+//       ? await Otp.findOneAndUpdate(
+//           { userId: user._id },
+//           {
+//             expiredCode: Date.now() + 3e5,
+//             code: Math.floor(Math.random() * 1e6),
+//           },
+//           { new: true }
+//         )
+//       : await Otp.create({ userId: user._id, email: req.body.email });
+//     const mailOptions = {
+//       from: "xuantuan1124@gmail.com",
+//       to: req.body.email,
+//       subject: "Verify account",
+//       html: `<h3>Mã xác thực của bạn là: </h3><b>${otp.code}</b>`,
+//     };
+//     Email.sendMail(req, res, next, mailOptions);
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create(req.body);
-//   const url = `${req.protocol}://${req.get('host')}/me`;
-//   new Email(newUser, url).sendWelcome();
+
+  let otp = await Otp.create({ userId: newUser._id, email: req.body.email });
+
+  const mailOptions = {
+    from: "xuantuan1124@gmail.com",
+    to: req.body.email,
+    subject: "Verify account",
+    html: `<h3>Mã xác thực của bạn là: </h3><b>${otp.code}</b>`,
+  };
+
+  Email.sendMail(req, res, next, mailOptions);
+
   createSendToken(newUser, 201, req, res);
 });
+
+exports.verifyEmail = catchAsync(async (req, res, next) => {
+    try {
+      if (!req.body.email) {
+        throw new ErrorHandler(502, "Missing email params");
+      }
+      let user = await User.findOne({ email: req.body.email });
+      if (!user) {
+        return next(new AppError("Missing email params", 502));
+      }
+      let otp = await Otp.findOne({ userId: user._id });
+      if (!otp) {
+        return next(new AppError("No otp", 400));
+      }
+      if (req.body.code != otp.code) {
+        return next(new AppError("invalid code", 400));
+      }
+      let currentTime = Date.now();
+      if (currentTime >= otp.expiredCode) {
+        return next(new AppError("expired code", 400));
+      }
+  
+      await User.updateOne(
+        { _id: user._id },
+        { isVerified: true, email: req.query.email }
+      );
+      res.json({ message: "verify successful" });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+
+
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
@@ -57,6 +135,11 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError("Incorrect email or password", 401));
   }
+ 
+  if(user.isVerified == false) {
+    return next(new AppError("This user have not verified", 401));
+  }
+  
 
   // 3) If everything ok, send token to client
   createSendToken(user, 200, req, res);
@@ -122,78 +205,112 @@ exports.restrictTo = (...roles) => {
 };
 
 exports.forgotPassword = async (req, res, next) => {
-  const user = await User.findOne({ email: req.body.email });
-  if (!user) {
-    return next(new AppError("There is no user with mail address", 404));
-  }
-
-  const resetToken = user.createPasswordResetToken();
-  await user.save({ validateBeforeSave: false });
-
-  const resetURL = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/users/resetPassword/${resetToken}`;
-
   try {
-    await new Email(user, resetURL).sendPasswordReset();
+    if (!req.body.email) {
+      return next(new AppError("Missing email params", 502));
+    }
 
-    res.status(200).json({
-      status: "success",
-      message: "Token sent to email!",
-    });
-  } catch (err) {
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    await user.save({ validateBeforeSave: false });
+    let user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return next(new AppError("Missing email params", 502));
+    }
 
-    return next(
-      new AppError("There was an error sending the email. Try again later", 500)
-    );
+    let checkExists = await Otp.findOne({ userId: user._id });
+    let otp = checkExists
+      ? await Otp.findOneAndUpdate(
+          { userId: user._id },
+          {
+            expiredCode: Date.now() + 3e5,
+            code: Math.floor(Math.random() * 1e6),
+          },
+          { new: true }
+        )
+      : await Otp.create({ userId: user._id, email: req.body.email });
+    const mailOptions = {
+      from: "xuantuan1124@gmail.com",
+      to: req.body.email,
+      subject: "Verify account",
+      html: `<h3>Mã xác thực của bạn là: </h3><b>${otp.code}</b>`,
+    };
+    Email.sendMail(req, res, next, mailOptions);
+  } catch (error) {
+    next(error);
   }
 };
 
+// exports.verifyCode = catchAsync(async (req, res, next) => {
+//   try {
+//     if (!req.body.email) {
+//       throw new ErrorHandler(502, "Missing email params");
+//     }
+//     let user = await User.findOne({ email: req.body.email });
+//     let otp = await Otp.findOne({ userId: user._id });
+//     if (!otp) {
+//       return next(new AppError("No otp", 400));
+//     }
+//     if (req.body.code != otp.code) {
+//       return next(new AppError("invalid code", 400));
+//     }
+//     let currentTime = Date.now();
+//     if (currentTime >= otp.expiredCode) {
+//       return next(new AppError("expired code", 400));
+//     }
+
+//     await User.updateOne(
+//       { _id: user._id },
+//       { isVerified: 1, email: req.query.email }
+//     );
+//     res.json({ message: "verify successful" });
+//   } catch (error) {
+//     next(error);
+//   }
+//   next();
+// });
+
 exports.resetPassword = catchAsync(async (req, res, next) => {
-  // 1. Get user based on the token
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(req.params.token)
-    .digest("hex");
-
-  const user = await User.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() },
-  });
-
+  if (!req.body.email) {
+    throw new ErrorHandler(502, "Missing email params");
+  }
+  let user = await User.findOne({ email: req.body.email });
   // 2. If token has not expired, and there is user, set the new password
   if (!user) {
-    return next(new AppError("There is no user with reset token", 404));
+    return next(new AppError("There is no user with reset password", 404));
+  }
+  let otp = await Otp.findOne({ userId: user._id });
+  if (!otp) {
+    return next(new AppError("No otp", 400));
+  }
+  if (req.body.code != otp.code) {
+    return next(new AppError("Invalid code", 400));
+  }
+  let currentTime = Date.now();
+  if (currentTime >= otp.expiredCode) {
+    return next(new AppError("Expired code", 400));
   }
 
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
-  user.passwordResetToken = undefined;
-  user.passwordResetExpires = undefined;
   await user.save();
 
-  // 3. Update changedPasswordAt property for the user
+ 
 
-  // 4. Log in user in, send JWT
+  // Log in user in, send JWT
   createSendToken(user, 200, req, res);
 });
 
-exports.updatePassword = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user.id).select("+password");
+// exports.updatePassword = catchAsync(async (req, res, next) => {
+//   const user = await User.findById(req.user.id).select("+password");
 
-  if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
-    return next(new AppError("Your current password is wrong.", 401));
-  }
-  user.password = req.body.password;
-  user.passwordConfirm = req.body.passwordConfirm;
+//   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+//     return next(new AppError("Your current password is wrong.", 401));
+//   }
+//   user.password = req.body.password;
+//   user.passwordConfirm = req.body.passwordConfirm;
 
-  await user.save();
+//   await user.save();
 
-  createSendToken(user, 200, req, res);
-});
+//   createSendToken(user, 200, req, res);
+// });
 
 exports.isLoggedIn = async (req, res, next) => {
   if (req.cookies.jwt) {
