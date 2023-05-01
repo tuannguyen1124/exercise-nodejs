@@ -17,6 +17,10 @@ const houseSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  imageCover: {
+    type: String,
+    required: [true, 'A house must have a cover image'],
+  },
   images: [String],
   createdAt: {
     type: Date,
@@ -26,13 +30,19 @@ const houseSchema = new mongoose.Schema({
   description: {
     type: String,
     trim: true,
-    required: [true, "A tour must have a description"],
+    required: [true, "A house must have a description"],
   },
   areaFloor: Number,
   numOfFloor: Number,
   numOfBedroom: Number,
   numOfBathroom: Number,
-  ratingAverage: Number,
+  ratingAverage: {
+    type: Number,
+    default: 4.5,
+    min: [1, 'Rating must be above 1.0'],
+    max: [5, 'Rating must be below 5.0'],
+    set: (val) => Math.round(val * 10) / 10,
+  },
   ratingQuantity: {
     type: Number,
     default: 0
