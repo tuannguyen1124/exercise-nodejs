@@ -6,7 +6,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 
-const cookieParser = require('cookie-parser'); 
+const cookieParser = require('cookie-parser');
 
 const compression = require('compression');
 const cors = require('cors');
@@ -16,7 +16,7 @@ const globalErrorHandler = require('./controllers/errorController');
 const userRouter = require('./routers/userRouters');
 const messengerRouter = require('./routers/messengerRouters');
 
-// const houseRouter = require('./routes/houseRoutes');
+const houseRouter = require('./routers/houseRouters');
 // const chatRouter = require('./routes/chatRoutes');
 // const viewRouter = require('./routes/viewRouters');
 
@@ -37,8 +37,13 @@ app.use(
 );
 
 // Body parser, reading data from body into req.body
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({
+  limit: '10kb'
+}));
+app.use(express.urlencoded({
+  extended: true,
+  limit: '10kb'
+}));
 app.use(cookieParser());
 
 // Data sanitization against NoSQL query injection
@@ -51,16 +56,16 @@ app.use(compression());
 
 // Test middleware
 app.use((req, res, next) => {
-    req.requestTime = new Date().toISOString();
-    console.log(req.cookies);
-    next();
-  });
+  req.requestTime = new Date().toISOString();
+  console.log(req.cookies);
+  next();
+});
 
 
 //app.use('/', viewRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/messenger', messengerRouter);
-// app.use('/api/v1/house', houseRouter);
+app.use('/api/v1/house', houseRouter);
 // app.use('/api/v1/chat', chatRouter);
 // app.use('/api/v1/booking', bookingRouter);
 
