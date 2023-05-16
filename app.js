@@ -17,6 +17,8 @@ const userRouter = require('./routers/userRouters');
 const messengerRouter = require('./routers/messengerRouters');
 
 const houseRouter = require('./routers/houseRouters');
+const reviewRouter = require('./routers/reviewRouters');
+
 // const chatRouter = require('./routes/chatRoutes');
 // const viewRouter = require('./routes/viewRouters');
 
@@ -66,6 +68,8 @@ app.use((req, res, next) => {
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/messenger', messengerRouter);
 app.use('/api/v1/house', houseRouter);
+app.use('/api/v1/reviews', reviewRouter);
+
 // app.use('/api/v1/chat', chatRouter);
 // app.use('/api/v1/booking', bookingRouter);
 
