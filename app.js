@@ -15,9 +15,8 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const userRouter = require('./routers/userRouters');
 const messengerRouter = require('./routers/messengerRouters');
-
 const houseRouter = require('./routers/houseRouters');
-// const chatRouter = require('./routes/chatRoutes');
+
 // const viewRouter = require('./routes/viewRouters');
 
 const app = express();
@@ -66,8 +65,6 @@ app.use((req, res, next) => {
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/messenger', messengerRouter);
 app.use('/api/v1/house', houseRouter);
-// app.use('/api/v1/chat', chatRouter);
-// app.use('/api/v1/booking', bookingRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
