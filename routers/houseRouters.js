@@ -9,7 +9,7 @@ router.use(authController.protect)
 router
   .route('/')
   .get(authController.protect, houseController.GetAllHouse)
-  .post(authController.protect, authController.restrictTo('admin', 'householder'), houseController.createHouse)
+  .post(authController.protect, houseController.createHouse)
 
 router
   .route('/:id')

@@ -7,6 +7,7 @@ const authController = require("./../controllers/authController");
 router.use(authController.protect);
 
 router.get('/get-list-conversations', messengerController.getListConversations);
+router.get('/get-friend', messengerController.getFriend);
 router.post('/send-message', messengerController.messageUploadDB);
 router.get('/get-message/:id', messengerController.messageGet);
 router.post('/image-message-send', messengerController.ImageMessageSend);

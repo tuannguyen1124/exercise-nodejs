@@ -78,14 +78,50 @@ module.exports.getListConversations = async (req, res) => {
   }
 };
 
+module.exports.getFriend = async (req, res) => {
+  const myId = req.user.id;
+  let fnd_msg = [];
+  try {
+    const friendGet = await User.find({
+      _id: {
+        $ne: myId,
+      },
+    });
+    for (let i = 0; i < friendGet.length; i++) {
+      let lmsg = await getLastMessage(myId, friendGet[i].id);
+      if (!lmsg) {
+        continue;
+      }
+      fnd_msg = [
+        ...fnd_msg,
+        {
+          fndInfo:  friendGet[i]
+        },
+      ];
+    }
+
+    // const filter = friendGet.filter(d=>d.id !== myId );
+    res.status(200).json({ success: true, friends: fnd_msg });
+  } catch (error) {
+    res.status(500).json({
+      error: {
+        errorMessage: "Internal Sever Error",
+      },
+    });
+  }
+};
+
 module.exports.messageUploadDB = async (req, res) => {
-  const { senderName, reseverId, message } = req.body;
+  const {
+    // senderName, 
+     reseverId,
+      message } = req.body;
   const senderId = req.user.id;
 
   try {
     const insertMessage = await Message.create({
       senderId: senderId,
-      senderName: senderName,
+    //  senderName: senderName,
       reseverId: reseverId,
       message: {
         text: message,
@@ -162,7 +198,10 @@ module.exports.ImageMessageSend = (req, res) => {
   const form = formidable();
 
   form.parse(req, (err, fields, files) => {
-    const { senderName, reseverId, imageName } = fields;
+    const { 
+   //   senderName, 
+      reseverId, 
+      imageName } = fields;
 
     const newPath = __dirname + `/public/img/msg/${imageName}`;
     files.image.originalFilename = imageName;
@@ -178,7 +217,7 @@ module.exports.ImageMessageSend = (req, res) => {
         } else {
           const insertMessage = await Message.create({
             senderId: senderId,
-            senderName: senderName,
+       //     senderName: senderName,
             reseverId: reseverId,
             message: {
               text: "",
